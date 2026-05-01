@@ -1,9 +1,12 @@
-# BreakingTheWorld
+# Why We Must Break the World
 
-Agentic DAG world-model discovery with MDL scoring. Code companion to the paper
-*"Why We Must Break the World"* (Buehler, 2026).
+Agentic DAG world-model discovery with MDL scoring.  
 
-## Motivation
+## Abstract
+
+Artificial intelligence is entering materials science and manufacturing at a moment when retrieval is often mistaken for discovery. We argue that models trained to optimize plausibility within a closed theoretical system are structurally biased toward interpolation and away from the anomalies from which scientific revolutions arise. In materials and manufacturing, this limitation becomes acute because the design space is combinatorial, multiscale, and physically constrained. What is needed is not another assistant for summarizing what is already known, but systems that can assemble compositional world models, invert the forward problem, falsify their own principles, and test those principles against simulation and fabrication. Drawing on recent work in graph-native reasoning, inverse protein design, multi-agent scientific discovery, and AI-integrated manufacturing, we outline an architecture for discovery built on three capabilities: world-model construction, adversarial falsification, and physical grounding. The central claim is that materials innovation will accelerate when AI moves beyond retrieval and surrogate prediction toward systems that can generate, challenge, and physically realize new hypotheses. In that sense, discovery requires breaking the current world model in order to build the next one.
+
+## Motivation and Background
 
 Discovery requires breaking the current world model to build the next one. This
 repository implements a concrete version of that idea: two agents -- the
@@ -17,6 +20,8 @@ B-factors) and on synthetic benchmarks (tensile mechanics, nonlinear
 oscillators). The key design choice is that the world model is an explicit,
 interpretable equation -- not a black box -- and new structure is accepted only
 when it earns its complexity cost in bits.
+
+![alt text](image.png)
 
 ## Architecture
 
