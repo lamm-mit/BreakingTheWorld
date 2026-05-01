@@ -1,34 +1,121 @@
 # BreakingTheWorld
 
-Agentic DAG world-model discovery with MDL scoring.
+Agentic DAG world-model discovery with MDL scoring. Code companion to the paper
+*"Why We Must Break the World"* (Buehler, 2026).
 
-The discovery runner lives in `src/world_model_breaker_cli.py`. The notebook is
-an interactive runner/visualizer around that library code. Synthetic data
-generation is separated from discovery so future agents can inspect, modify, or
-replace the oracle.
+## Motivation
 
-## What MDL Means
+Discovery requires breaking the current world model to build the next one. This
+repository implements a concrete version of that idea: two agents -- the
+**Breaker** and the **Builder** -- collaborate adversarially over a shared
+symbolic world model. The Breaker designs experiments to falsify the current
+model. The Builder revises the model to explain the newly revealed evidence.
+Every revision must pass a quantitative gate: Minimum Description Length (MDL).
 
-MDL is Minimum Description Length. The runner accepts a new world model only if
-it gives a shorter total explanation of the revealed evidence:
+The system works on real scientific data (protein structures, crystallographic
+B-factors) and on synthetic benchmarks (tensile mechanics, nonlinear
+oscillators). The key design choice is that the world model is an explicit,
+interpretable equation -- not a black box -- and new structure is accepted only
+when it earns its complexity cost in bits.
+
+## Architecture
+
+### The Breaker-Builder Loop
+
+Each discovery run proceeds in iterations:
+
+1. **Iteration 0 (Build)**: The Builder fits an initial DAG equation on the
+   first revealed data stage.
+2. **Iteration 1..N (Break + Rebuild)**: The Breaker selects the next
+   experiment/data stage most likely to falsify the current model, states a
+   hypothesis, and collects the data. The Builder then searches for a revised
+   DAG on all revealed data. The revision is accepted only if it lowers total
+   MDL bits.
+
+With `--llm-builder`, the Builder LLM reasons about the system physics,
+diagnoses residual patterns, proposes candidate latent variables, and seeds
+symbolic DAG features. Without LLM (`--no-llm`), the system uses deterministic
+heuristic seeds. In both cases, a stochastic hill-climb explores further
+structural edits, and **MDL is the sole acceptance criterion**.
+
+### The DAG World Model
+
+The world model is a linear combination of features:
+
+```text
+y_hat = beta_0 + sum_i beta_i * f_i(x)
+```
+
+Each feature `f_i` is a product of 1-4 primitive factors drawn from:
+
+| Factor | Form | Applies to |
+|---|---|---|
+| `Ident(v)` | `v` | continuous variables |
+| `Pow(v, k)` | `v^k` (k=1..4) | continuous variables |
+| `IndEq(v, a)` | `1 if v==a else 0` | discrete variables |
+| `IndLE(v, t)` | `1 if v<=t else 0` | continuous variables |
+| `ReLU(v, t)` | `max(v-t, 0)` | continuous variables |
+
+This factor algebra is expressive enough to represent piecewise-linear models,
+polynomial terms, regime splits, and interactions, while remaining compact
+enough that MDL can meaningfully score structure against fit.
+
+### MDL Scoring
+
+MDL (Minimum Description Length) is the principled tradeoff between parsimony
+and fit. Total description length is:
 
 ```text
 L_total = L_model + L_data
 ```
 
-`L_model` is the bit cost of describing the DAG structure and fitted parameters.
-`L_data` is the bit cost of the residual error left after the model predicts the
-revealed data. This means a more complex hypothesis must earn its keep by
-reducing residual error enough to lower the total bit count.
+- `L_model`: bit cost of the DAG structure (number of features, factor types,
+  variable selections, thresholds) plus fitted coefficients.
+- `L_data`: bit cost of the residual error under a Gaussian coding scheme.
+
+A more complex model has higher `L_model` but can reduce `L_data`. The model is
+accepted only when the net `L_total` decreases. This prevents overfitting
+without an external validation set.
+
+### Stages and Oracles
+
+Data are organized into **stages** -- physically ordered experimental regimes
+(e.g., elastic loading before unloading, compact proteins before hinge proteins).
+Stages have `prerequisites` that enforce the physical collection order. The
+Breaker can only request stages whose prerequisites have been collected.
+
+An **oracle** is the data source. It can be:
+- A **saved dataset** (`--dataset-json`): all observations pre-generated.
+- A **live oracle** (`--oracle duffing`): the simulator runs on demand and
+  reveals targets only when the Breaker collects a stage.
+
+### Search Parameters
+
+The symbolic DAG search is a stochastic hill-climb with these controls:
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--search-steps` | 160/260 | Max DAG edit proposals per hill-climb run |
+| `--search-restarts` | 3/6 | Independent hill-climbs per iteration; best is kept |
+| `--search-patience` | 30/35 | Stop early after this many consecutive rejections |
+| `--rounds` | 3 | Breaker collect + Builder rebuild cycles after iteration 0 |
+| `--reasoning-effort` | medium | LLM reasoning depth (low/medium/high) |
+
+More restarts and steps give the search a better chance of finding the global
+MDL minimum at the cost of wall-clock time.
 
 ## What Was Implemented
 
 - `src/discovery_data.py`: reusable `Observation` and `DiscoveryDataset` types plus JSON/CSV I/O.
-- `src/tensile_test_oracle.py`: synthetic tensile-system simulators/oracles.
+- `src/dag_model.py`: DAG world model with factor algebra, least-squares fitting, and MDL scoring.
+- `src/dag_search.py`: stochastic hill-climb over DAG structures with add/remove/swap/perturb operators.
+- `src/world_model_breaker_cli.py`: main discovery CLI with Breaker/Builder agents, rendering, and artifact generation.
+- `src/protein_nma_oracle.py`: real-protein GNM feature pipeline (PDB parsing, Kirchhoff matrix, normal modes, B-factor normalization).
+- `src/protein_world_model_cli.py`: protein-specific CLI that builds datasets from PDB structures and runs discovery with auto-generated reports and figures.
+- `src/tensile_test_oracle.py`: synthetic tensile-system simulators (cyclic and fracture).
 - `src/oracle_adapters.py`: live oracle protocol plus the Duffing oscillator simulator.
-- `src/create_synthetic_dataset.py`: CLI for creating reusable dataset artifacts.
-- `src/world_model_breaker_cli.py`: discovery CLI that can either generate a built-in synthetic dataset or load a saved `DiscoveryDataset` JSON.
-- `visualize_discovery.ipynb`: thin notebook runner that calls the library discovery workflow.
+- `src/create_synthetic_dataset.py`: CLI for creating reusable dataset snapshots.
+- `src/create_protein_flex_dataset.py`: standalone CLI for building protein flexibility datasets.
 
 ## Synthetic Examples
 
@@ -115,11 +202,25 @@ python src/world_model_breaker_cli.py \
 
 ## Real Protein Normal-Mode Example
 
-This example uses real PDB structures. Each residue becomes one observation:
-the inputs are C-alpha contact-network and normal-mode features, and the target
-is the residue's experimental C-alpha B-factor normalized within that protein.
-The physics calculation is a lightweight Gaussian Network Model (GNM) implemented
-in this repo, so ProDy is not required for the first version.
+This is the primary demonstration for the paper. It runs the full
+build-break-rebuild loop on real scientific data: protein structures downloaded
+from the Protein Data Bank.
+
+**Physics pipeline**: Each protein chain is represented as a C-alpha contact
+network. A Gaussian Network Model (GNM) -- the Kirchhoff matrix of the contact
+graph -- is diagonalized to extract normal-mode fluctuation features. These
+encode how much each residue is predicted to move based purely on contact
+topology and elastic-network mechanics. The target is the residue's experimental
+crystallographic B-factor (thermal displacement), z-scored within each chain.
+
+**Staged discovery story**: The system starts with compact single-domain
+proteins where GNM should work well, then reveals proteins with flexible termini
+(probing boundary effects), hinge/domain-motion proteins (probing collective
+modes), and finally a mixed validation set. At each stage, the current DAG
+equation is challenged and revised only if MDL supports the added structure.
+
+The GNM implementation is self-contained in this repo (no ProDy dependency).
+PDB files are cached locally in `data/pdb_cache/`.
 
 Build only the staged dataset:
 
@@ -300,20 +401,48 @@ Each run writes:
 
 ```text
 <outdir>/
-  config.json
-  metrics.csv
-  report.md
-  run_summary.json
-  world_model_iter_*.json
-  frame_iter_*.png
-  evolution.gif
-  agent_logs/
+  config.json              # full CLI args and dataset metadata
+  metrics.csv              # quantitative trajectory (RMSE, R2, MDL bits per iteration)
+  report.md                # narrative report with equations, breaks, and interpretations
+  run_summary.json         # machine-readable summary of the full run
+  world_model_iter_*.json  # DAG snapshot at each iteration (structure, coefficients, bits)
+  frame_iter_*.png         # multi-panel visualization of each iteration (see below)
+  evolution.gif            # animated sequence of all iteration frames
+  agent_logs/              # raw LLM request/response logs and search traces
   paper_figures/
-    mdl_trajectory.svg
-    discovery_timeline.svg
-    model_evolution.svg
-    dag_evolution.svg
+    mdl_trajectory.svg     # MDL budget (L_model + L_data) across iterations
+    discovery_timeline.svg # Breaker collection sequence with break types
+    model_evolution.svg    # data + model fit panels side by side
+    dag_evolution.svg      # DAG graph structure at each iteration
 ```
+
+The protein CLI additionally generates:
+
+```text
+  protein_world_model_detailed_report.md   # interpretive report with feature explanations
+  protein_world_model_report.tex           # LaTeX report with figures and tables
+  protein_world_model_report.pdf           # compiled PDF (if pdflatex is available)
+  protein_integrated_discovery_figure.pdf  # single summary figure for the paper
+  report_assets/                           # per-protein 3D structure visualizations
+```
+
+### Iteration Frame Panels (`frame_iter_*.png`)
+
+Each frame contains six panels that together provide a full audit of one
+discovery iteration:
+
+- **Top-left (scatter)**: Predicted vs. experimental target. For proteins this
+  is DAG prediction vs. B-factor z, colored by revealed stage, with an inset
+  RMSE-by-stage bar chart. The equation and MDL summary are overlaid.
+- **Top-right (graph)**: The DAG structure as a directed graph. Blue = observable
+  inputs, orange = primitive factors, green = product features, purple = target.
+  Green-bordered nodes were added in this iteration.
+- **Middle-right (stacked bar)**: MDL budget across all iterations so far.
+  Blue = L_model (structure + coefficients), orange = L_data (residual error).
+- **Bottom-left (trace)**: Inner hill-climb search trace. Green dots = accepted
+  proposals, red x's = rejected. Shows convergence behavior.
+- **Bottom-right (text)**: Break detection status, Breaker hypothesis,
+  collection request, search convergence info, and Builder/Breaker rationales.
 
 ## Custom Systems
 
