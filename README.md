@@ -6,6 +6,7 @@ Agentic DAG world-model discovery with MDL scoring.
 
 Artificial intelligence is entering materials science and manufacturing at a moment when retrieval is often mistaken for discovery. We argue that models trained to optimize plausibility within a closed theoretical system are structurally biased toward interpolation and away from the anomalies from which scientific revolutions arise. In materials and manufacturing, this limitation becomes acute because the design space is combinatorial, multiscale, and physically constrained. What is needed is not another assistant for summarizing what is already known, but systems that can assemble compositional world models, invert the forward problem, falsify their own principles, and test those principles against simulation and fabrication. Drawing on recent work in graph-native reasoning, inverse protein design, multi-agent scientific discovery, and AI-integrated manufacturing, we outline an architecture for discovery built on three capabilities: world-model construction, adversarial falsification, and physical grounding. The central claim is that materials innovation will accelerate when AI moves beyond retrieval and surrogate prediction toward systems that can generate, challenge, and physically realize new hypotheses. In that sense, discovery requires breaking the current world model in order to build the next one.
 
+
 ## Motivation and Background
 
 Discovery requires breaking the current world model to build the next one. This
@@ -450,6 +451,17 @@ discovery iteration:
 - **Bottom-right (text)**: Break detection status, Breaker hypothesis,
   collection request, search convergence info, and Builder/Breaker rationales.
 
+Figure 1 shows an example with a brief analysis.
+
+![alt text](assets/frame_iter_03.png)
+
+<p align="center">
+  <sub>
+    Figure 1: World-model breaking and MDL-guided DAG expansion. The system identifies a harder validation regime, proposes DAG-level revisions, and accepts a revised world model only when it improves MDL compression.
+  </sub>
+</p>
+
+
 ## Custom Systems
 
 For other systems, construct a `DiscoveryDataset` with your own:
@@ -489,7 +501,7 @@ oracle route is the preferred abstraction for open-ended active discovery.
 
 ## Citation
 
-`bibtex
+```bibtex
 @article{buehler2026why,
   author   = {Markus J. Buehler},
   title    = {Why We Must Break the World},
@@ -499,7 +511,6 @@ oracle route is the preferred abstraction for open-ended active discovery.
   year     = {2026},
   doi      = {10.26434/chemrxiv.15001674/v1},
   url      = {https://chemrxiv.org/doi/abs/10.26434/chemrxiv.15001674/v1},
-  eprint   = {https://chemrxiv.org/doi/pdf/10.26434/chemrxiv.15001674/v1},
-  abstract = {Artificial intelligence is entering materials science and manufacturing at a moment when retrieval is often mistaken for discovery. We argue that models trained to optimize plausibility within a closed theoretical system are structurally biased toward interpolation and away from the anomalies from which scientific revolutions arise. In materials and manufacturing, this limitation becomes acute because the design space is combinatorial, multiscale, and physically constrained. What is needed is not another assistant for summarizing what is already known, but systems that can assemble compositional world models, invert the forward problem, falsify their own principles, and test those principles against simulation and fabrication. Drawing on recent work in graph-native reasoning, inverse protein design, multi-agent scientific discovery, and AI-integrated manufacturing, we outline an architecture for discovery built on three capabilities: world-model construction, adversarial falsification, and physical grounding. The central claim is that materials innovation will accelerate when AI moves beyond retrieval and surrogate prediction toward systems that can generate, challenge, and physically realize new hypotheses. In that sense, discovery requires breaking the current world model in order to build the next one.}
+  eprint   = {https://chemrxiv.org/doi/pdf/10.26434/chemrxiv.15001674/v1}
 }
-`
+```
