@@ -122,6 +122,7 @@ MDL minimum at the cost of wall-clock time.
 - `src/oracle_adapters.py`: live oracle protocol plus the Duffing oscillator simulator.
 - `src/create_synthetic_dataset.py`: CLI for creating reusable dataset snapshots.
 - `src/create_protein_flex_dataset.py`: standalone CLI for building protein flexibility datasets.
+- `src/rerender_figures.py`: CLI to re-render publication-quality figures (SVG/PNG) from existing run directories.
 
 ## Synthetic Examples
 
@@ -461,6 +462,40 @@ Figure 1 shows an example with a brief analysis.
   </sub>
 </p>
 
+
+## Re-rendering Figures
+
+`src/rerender_figures.py` regenerates publication-quality figures from an
+existing discovery run without re-running the experiment. It reads the saved
+`world_model_iter_*.json` records and `run_summary.json` to produce:
+
+- **`dag_evolution.{svg,png}`** — side-by-side DAG graphs for every iteration,
+  showing how the world model structure evolves. Identity factor-feature chains
+  are folded into single nodes to avoid visual duplication; only active
+  (connected) nodes are shown with readable shortened labels.
+- **`mdl_trajectory.{svg,png}`** — stacked L_model + L_data bar chart across
+  iterations with L_total line and break-detection bit gains annotated.
+- **`discovery_timeline.{svg,png}`** — horizontal timeline of stage reveals,
+  break detections, and model revisions.
+- **`search_trace_iter_*.{svg,png}`** — per-iteration hill-climb search trace
+  showing accepted vs. rejected proposals and convergence behavior.
+- **`frame_iter_*.png`** — per-iteration composite frames (scatter, DAG, MDL
+  budget, search trace, and text summary).
+- **`evolution.gif`** — animated GIF cycling through the per-iteration frames.
+
+```bash
+# Basic usage (renders into the same discovery directory)
+python src/rerender_figures.py runs/protein_flex_llm_deep/discovery
+
+# Higher DPI for print
+python src/rerender_figures.py runs/protein_flex_llm_deep/discovery --dpi 300
+
+# Custom output directory
+python src/rerender_figures.py runs/protein_flex_llm_deep/discovery --outdir my_figures
+
+# Skip per-iteration frames and GIF (only produce summary plots)
+python src/rerender_figures.py runs/protein_flex_llm_deep/discovery --skip-frames
+```
 
 ## Custom Systems
 

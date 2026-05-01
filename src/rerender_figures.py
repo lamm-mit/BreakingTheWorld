@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import textwrap
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -58,21 +59,59 @@ _KIND_EDGE = {
 
 _LABEL_MAP = {
     "gnm_fluct_z": "GNM fluct.",
-    "gnm_fluct_log_z": "GNM log-fluct.",
-    "contact_degree_z": "contact deg. z",
-    "contact_degree_raw": "contact deg.",
+    "gnm_fluct_log_z": "GNM log-fl.",
+    "contact_degree_z": "contact deg.",
+    "contact_degree_raw": "contact deg. raw",
     "terminal_exposure": "terminal exp.",
     "mode1_abs_z": "|mode1| z",
-    "hinge_score_z": "hinge score z",
+    "hinge_score_z": "hinge score",
     "chain_break_proximity": "chain break",
     "res_index_norm": "res. index",
-    "is_hydrophobic": "is hydrophobic",
+    "is_hydrophobic": "hydrophobic",
+    "is_charged": "charged",
+    "is_polar": "polar",
+    "is_gly": "is_gly",
+    "is_pro": "is_pro",
+    "is_terminal": "terminal",
     "bfactor_z": "B-factor z",
 }
 
 
+def _shorten_factor(factor: str) -> str:
+    """Shorten a single factor label (may contain function wrappers)."""
+    if factor in _LABEL_MAP:
+        return _LABEL_MAP[factor]
+    # relu(var-threshold) or relu(var--threshold)
+    m = re.match(r'(relu|pow)\((\w+)(.*)\)', factor, re.IGNORECASE)
+    if m:
+        func, var, rest = m.group(1), m.group(2), m.group(3)
+        short_var = _LABEL_MAP.get(var, var)
+        return f"{func}({short_var}{rest})"
+    # [var=val] indicator
+    m = re.match(r'\[(\w+)=(\S+)\]', factor)
+    if m:
+        var, val = m.group(1), m.group(2)
+        short_var = _LABEL_MAP.get(var, var)
+        return f"[{short_var}={val}]"
+    return factor
+
+
 def _display_label(label: str) -> str:
-    return _LABEL_MAP.get(label, label)
+    """Shorten a node label for display, handling products.
+
+    Product labels longer than 22 chars are wrapped at the multiply sign
+    so they fit inside a reasonably-sized box.
+    """
+    if label in _LABEL_MAP:
+        return _LABEL_MAP[label]
+    if " * " in label:
+        parts = label.split(" * ")
+        short_parts = [_shorten_factor(p.strip()) for p in parts]
+        joined = " \u00d7 ".join(short_parts)
+        if len(joined) > 22:
+            return "\n\u00d7 ".join(short_parts)  # wrap at multiply sign
+        return joined
+    return _shorten_factor(label)
 
 
 def _active_subgraph(record: Dict[str, Any]) -> Tuple[List[Dict], List[Dict]]:
@@ -82,49 +121,122 @@ def _active_subgraph(record: Dict[str, Any]) -> Tuple[List[Dict], List[Dict]]:
     """
     nodes = record.get("nodes", [])
     edges = record.get("edges", [])
-    # Find nodes that participate in at least one edge
     active_ids = set()
     for e in edges:
         active_ids.add(e["source"])
         active_ids.add(e["target"])
-    # Keep all non-observable nodes, plus observables that are used
     active_nodes = [
         n for n in nodes
         if n["id"] in active_ids or n.get("kind") not in ("observable",)
     ]
-    # Actually, only keep nodes that are reachable
     active_node_ids = {n["id"] for n in active_nodes}
     active_edges = [e for e in edges if e["source"] in active_node_ids and e["target"] in active_node_ids]
     return active_nodes, active_edges
 
 
+def _fold_identity_chains(record: Dict[str, Any]) -> Dict[str, Any]:
+    """Collapse identity factor nodes out of the DAG.
+
+    Any factor with kind ``Ident`` is a pass-through — it adds a node and
+    an edge without changing the value.  We fold *every* Ident factor
+    (including those inside multi-factor product features), rewiring the
+    observable edge directly to the feature node.
+
+    Additionally, if an observable now feeds *only* a single purely-identity
+    feature (single Ident factor), we absorb the observable too so the
+    feature node alone represents the input.
+    """
+    features = record.get("features", [])
+    nodes = list(record.get("nodes", []))
+    edges = list(record.get("edges", []))
+
+    # --- Step 1: fold every Ident factor regardless of feature size ---
+    fold_ids: set = set()
+    fold_map: dict = {}
+    # Track purely-identity features (single Ident factor) for step 2
+    identity_feat_ids: set = set()
+
+    for i, feat in enumerate(features):
+        factors = feat.get("factors", [])
+        if len(factors) == 1 and factors[0].get("kind") == "Ident":
+            identity_feat_ids.add(f"feat:{i}")
+        for j, factor in enumerate(factors):
+            if factor.get("kind") == "Ident":
+                prefix = f"fact:{i}:{j}:"
+                for n in nodes:
+                    if n["kind"] == "factor" and n["id"].startswith(prefix):
+                        fold_ids.add(n["id"])
+                        fold_map[n["id"]] = f"feat:{i}"
+                        break
+
+    if not fold_map:
+        return record
+
+    new_nodes = [n for n in nodes if n["id"] not in fold_ids]
+    new_edges = []
+    for e in edges:
+        if e["target"] in fold_ids:
+            new_edges.append({"source": e["source"], "target": fold_map[e["target"]]})
+        elif e["source"] in fold_ids:
+            pass  # factor->feature edge absorbed
+        else:
+            new_edges.append(e)
+
+    # --- Step 2: absorb observables that only feed a single identity feature ---
+    obs_ids = {n["id"] for n in new_nodes if n["kind"] == "observable"}
+    obs_outgoing: Dict[str, List[str]] = {oid: [] for oid in obs_ids}
+    for e in new_edges:
+        if e["source"] in obs_outgoing:
+            obs_outgoing[e["source"]].append(e["target"])
+
+    absorb_obs: set = set()
+    for obs_id, targets in obs_outgoing.items():
+        if len(targets) == 1 and targets[0] in identity_feat_ids:
+            absorb_obs.add(obs_id)
+
+    if absorb_obs:
+        new_nodes = [n for n in new_nodes if n["id"] not in absorb_obs]
+        new_edges = [e for e in new_edges if e["source"] not in absorb_obs]
+
+    result = dict(record)
+    result["nodes"] = new_nodes
+    result["edges"] = new_edges
+    return result
+
+
 def _compute_layout(nodes: List[Dict], edges: List[Dict]) -> Dict[str, Tuple[float, float]]:
-    """Horizontal layered layout: observables left, target right."""
+    """Horizontal layered layout: observables left, target right.
+
+    Features that have no incoming edges (absorbed identity inputs) are
+    positioned at layer 0 alongside observables.
+    """
+    has_incoming = {e["target"] for e in edges}
+
     layer_map = {"observable": 0, "factor": 1, "feature": 2, "target": 3}
     groups: Dict[int, List[str]] = {}
-    node_kind = {}
     for n in nodes:
         kind = n.get("kind", "observable")
         layer = layer_map.get(kind, 1)
+        # Root features (no incoming edges) act as direct inputs
+        if kind == "feature" and n["id"] not in has_incoming:
+            layer = 0
         groups.setdefault(layer, []).append(n["id"])
-        node_kind[n["id"]] = kind
 
-    # Sort within each layer for stability
     for layer in groups:
         groups[layer] = sorted(groups[layer])
 
     pos: Dict[str, Tuple[float, float]] = {}
-    x_positions = {0: 0.0, 1: 1.5, 2: 3.0, 3: 4.5}
+    x_positions = {0: 0.0, 1: 1.6, 2: 3.2, 3: 5.0}
 
     for layer, nids in groups.items():
         x = x_positions.get(layer, layer * 1.5)
-        n = len(nids)
-        if n == 1:
+        n_items = len(nids)
+        if n_items == 1:
             ys = [0.5]
         else:
-            ys = np.linspace(0.0, 1.0, n).tolist()
-        for nid, y in zip(nids, ys):
-            pos[nid] = (x, y)
+            ys = np.linspace(0.0, 1.0, n_items).tolist()
+        for nid, y_val in zip(nids, ys):
+            pos[nid] = (x, y_val)
     return pos
 
 
@@ -149,6 +261,11 @@ def render_dag_panel(
     title: str = "",
     show_unused_count: bool = True,
 ) -> None:
+    # Fold identity chains for cleaner visualization
+    record = _fold_identity_chains(record)
+    if prev_record is not None:
+        prev_record = _fold_identity_chains(prev_record)
+
     all_nodes = record.get("nodes", [])
     nodes, edges = _active_subgraph(record)
     if not nodes:
@@ -165,23 +282,33 @@ def render_dag_panel(
     if prev_record:
         prev_ids = {n["id"] for n in prev_record.get("nodes", [])}
 
-    # Determine axis limits
-    all_x = [p[0] for p in pos.values()]
-    all_y = [p[1] for p in pos.values()]
-    x_margin = 0.8
-    y_margin = 0.18
-    ax.set_xlim(min(all_x) - x_margin, max(all_x) + x_margin)
-    ax.set_ylim(min(all_y) - y_margin, max(all_y) + y_margin)
-    ax.set_aspect("equal")
+    # Fixed coordinate system so all panels have identical viewport
+    ax.set_xlim(-0.8, 5.8)
+    ax.set_ylim(-0.25, 1.25)
     ax.axis("off")
 
-    # Box dimensions per kind
-    box_dims = {
+    # Base box dimensions per kind — scaled up for long labels
+    base_dims = {
         "observable": (0.80, 0.10),
-        "factor": (0.90, 0.10),
-        "feature": (1.00, 0.10),
+        "factor": (0.95, 0.10),
+        "feature": (1.10, 0.10),
         "target": (0.70, 0.10),
     }
+
+    def _box_params(kind: str, label: str):
+        w, h = base_dims.get(kind, (0.8, 0.1))
+        fs = 8.5 if kind == "target" else 7.5
+        n_lines = label.count("\n") + 1
+        if n_lines > 1:
+            h = 0.10 * n_lines + 0.02  # taller for wrapped labels
+        # Size to the longest line, capped at 1.5
+        longest = max(len(line) for line in label.split("\n"))
+        if longest > 18:
+            w = max(w, min(1.5, 0.06 * longest))
+            fs = min(fs, 6.5)
+        if longest > 28:
+            fs = min(fs, 5.8)
+        return w, h, fs
 
     # Draw edges
     for edge in edges:
@@ -191,8 +318,10 @@ def render_dag_panel(
             x1, y1 = pos[tgt]
             kind_src = node_map.get(src, {}).get("kind", "observable")
             kind_tgt = node_map.get(tgt, {}).get("kind", "observable")
-            w_src = box_dims.get(kind_src, (0.8, 0.1))[0]
-            w_tgt = box_dims.get(kind_tgt, (0.8, 0.1))[0]
+            lbl_src = _display_label(node_map.get(src, {}).get("label", ""))
+            lbl_tgt = _display_label(node_map.get(tgt, {}).get("label", ""))
+            w_src = _box_params(kind_src, lbl_src)[0]
+            w_tgt = _box_params(kind_tgt, lbl_tgt)[0]
             ax.annotate(
                 "", xy=(x1 - w_tgt / 2 - 0.02, y1), xytext=(x0 + w_src / 2 + 0.02, y0),
                 arrowprops=dict(
@@ -214,12 +343,11 @@ def render_dag_panel(
         is_new = nid not in prev_ids and prev_record is not None
         fc = _KIND_COLORS.get(kind, "#eeeeee")
         ec = "#2e7d32" if is_new else _KIND_EDGE.get(kind, "#666666")
-        lw = 2.4 if is_new else 1.2
-        w, h = box_dims.get(kind, (0.8, 0.1))
+        lw_val = 2.4 if is_new else 1.2
         label = _display_label(n.get("label", nid))
-        fontsize = 8.5 if kind == "target" else 7.5
+        w, h, fontsize = _box_params(kind, label)
         fontweight = "bold" if (kind == "target" or is_new) else "normal"
-        _draw_box(ax, x, y, w, h, label, fc, ec, lw, fontsize, fontweight)
+        _draw_box(ax, x, y, w, h, label, fc, ec, lw_val, fontsize, fontweight)
 
     # Show count of unused observables
     if show_unused_count and n_unused > 0:
@@ -234,20 +362,22 @@ def render_dag_panel(
                 color="#888888", fontstyle="italic",
             )
 
-    # Legend
-    legend_x = min(all_x) - x_margin + 0.1
-    legend_y = min(all_y) - y_margin + 0.03
-    for i, (kind, color) in enumerate([
+    # Legend — spread items across the full viewport width
+    legend_y = -0.20
+    legend_items = [
         ("observable", _KIND_COLORS["observable"]),
         ("factor", _KIND_COLORS["factor"]),
         ("feature", _KIND_COLORS["feature"]),
         ("target", _KIND_COLORS["target"]),
-    ]):
+    ]
+    legend_xs = np.linspace(-0.6, 4.0, len(legend_items))
+    for i, (kind, color) in enumerate(legend_items):
+        lx = legend_xs[i]
         ax.add_patch(patches.Rectangle(
-            (legend_x + i * 0.55, legend_y), 0.08, 0.04,
+            (lx, legend_y), 0.08, 0.04,
             facecolor=color, edgecolor="#999", linewidth=0.6, zorder=5,
         ))
-        ax.text(legend_x + i * 0.55 + 0.10, legend_y + 0.02, kind,
+        ax.text(lx + 0.10, legend_y + 0.02, kind,
                 fontsize=5.5, va="center", color="#555", zorder=5)
 
     if title:
@@ -402,32 +532,37 @@ def render_dag_evolution(
     cols = min(2, n)
     rows = math.ceil(n / cols)
 
-    fig, axes = plt.subplots(
-        rows, cols,
-        figsize=(9.0 * cols, 4.5 * rows),
-    )
+    fig = plt.figure(figsize=(9.0 * cols, 5.0 * rows))
     fig.patch.set_facecolor("white")
-    axes = np.asarray(axes).reshape(-1)
+    gs = gridspec.GridSpec(rows, cols, figure=fig, hspace=0.35, wspace=0.20)
 
-    for i, (ax, record) in enumerate(zip(axes, records)):
+    for i, record in enumerate(records):
+        r_idx = i // cols
+        c_idx = i % cols
+        ax = fig.add_subplot(gs[r_idx, c_idx])
+
         prev = records[i - 1] if i > 0 else None
         version = record.get("version", i)
         bits = record.get("bits", {})
         eq = (record.get("equation_lines") or [""])[0]
-        short_eq = eq if len(eq) < 55 else eq[:52] + "..."
+        # Show full equation, wrapped and in smaller font
+        wrapped_eq = "\n".join(textwrap.wrap(eq, width=90))
         title = f"iter {version}  |  k={bits.get('k_features', '?')}  RMSE={bits.get('rmse', 0):.3f}"
         render_dag_panel(ax, record, prev, title=title)
         ax.text(
-            0.5, -0.02, short_eq,
+            0.5, -0.04, wrapped_eq,
             transform=ax.transAxes, ha="center", va="top",
-            fontsize=7, family="monospace", color="#334155",
+            fontsize=6, family="monospace", color="#334155",
         )
 
-    for ax in axes[n:]:
+    # Hide any leftover axes
+    for j in range(n, rows * cols):
+        r_idx = j // cols
+        c_idx = j % cols
+        ax = fig.add_subplot(gs[r_idx, c_idx])
         ax.axis("off")
 
     fig.suptitle("DAG World-Model Evolution", fontsize=16, fontweight="bold")
-    fig.tight_layout(rect=[0, 0.02, 1, 0.95])
     out_path.parent.mkdir(parents=True, exist_ok=True)
     for suffix in [".svg", ".png"]:
         fig.savefig(out_path.with_suffix(suffix), dpi=dpi, bbox_inches="tight", facecolor="white")
@@ -453,32 +588,40 @@ def render_mdl_trajectory(
     fig, axes = plt.subplots(1, 3, figsize=(15, 4.2), constrained_layout=True)
     fig.patch.set_facecolor("white")
 
+    # --- MDL Budget panel ---
     ax = axes[0]
     ax.bar(iters, l_model, color="#4a90a4", edgecolor="#2a5a6a", label="L_model")
     ax.bar(iters, l_data, bottom=l_model, color="#e8944a", edgecolor="#a86020", label="L_data")
     ax.plot(iters, l_total, color="#1a1a2e", marker="o", linewidth=2, label="L_total", zorder=3)
+    # Annotate break bit gains on the MDL panel (where they semantically belong)
+    for r in records[1:]:
+        gain = r.get("break_bits_gain", 0)
+        if gain > 0:
+            ax.annotate(
+                f"+{gain:.1f}",
+                xy=(r["version"], r["bits"]["L_total"]),
+                xytext=(0, 10), textcoords="offset points",
+                ha="center", fontsize=8, color="#555",
+                clip_on=False,
+            )
     ax.set_title("MDL Budget", fontsize=12, fontweight="bold")
     ax.set_xlabel("Iteration")
     ax.set_ylabel("Bits")
     ax.legend(frameon=False, fontsize=9)
     ax.grid(alpha=0.2, axis="y")
     ax.set_xticks(iters)
+    ax.set_ylim(0, max(l_total) * 1.12)
 
+    # --- RMSE panel ---
     ax = axes[1]
     ax.plot(iters, rmse, marker="s", color="#2d8e2d", linewidth=2.2, markersize=8)
-    for r in records[1:]:
-        ax.annotate(
-            f"{r.get('break_bits_gain', 0):+.1f}b",
-            xy=(r["version"], r["bits"]["rmse"]),
-            xytext=(0, 10), textcoords="offset points",
-            ha="center", fontsize=8, color="#555",
-        )
     ax.set_title("RMSE", fontsize=12, fontweight="bold")
     ax.set_xlabel("Iteration")
     ax.set_ylabel("RMSE")
     ax.grid(alpha=0.2)
     ax.set_xticks(iters)
 
+    # --- R-squared panel ---
     ax = axes[2]
     ax.plot(iters, r2, marker="D", color="#7b3fa0", linewidth=2.2, markersize=8)
     ax.set_title("R\u00b2", fontsize=12, fontweight="bold")
@@ -537,7 +680,7 @@ def render_discovery_timeline(
         if r["version"] > 0:
             btype = r.get("break_type", "none")
             gain = r.get("break_bits_gain", 0)
-            ax.text(x, y + 0.16, f"{btype}\n{gain:+.1f} bits",
+            ax.text(x, y + 0.16, f"{btype}\n+{gain:.1f} bits",
                     ha="center", va="bottom", fontsize=8, color="#334155")
 
     eq = (records[-1].get("equation_lines") or [""])[0]
@@ -551,6 +694,126 @@ def render_discovery_timeline(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     for suffix in [".svg", ".png"]:
         fig.savefig(out_path.with_suffix(suffix), dpi=dpi, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Per-iteration hill-climb search trace
+# ---------------------------------------------------------------------------
+
+def _render_search_trace_axes(
+    ax: plt.Axes,
+    record: Dict[str, Any],
+    numbered: bool = False,
+) -> List[Tuple[int, str, float]]:
+    """Draw the hill-climb trace on *ax*.  Returns accepted-step table rows.
+
+    If *numbered* is True, each accepted dot gets a circled index [1], [2], ...
+    Otherwise the plot is clean (no text on the data area).
+    """
+    trace = record.get("search_trace", [])
+    version = record.get("version", 0)
+    if not trace:
+        return []
+
+    xs = [s["step"] for s in trace]
+    bits_after = [s["bits_after"] if s["bits_after"] == s["bits_after"] else np.nan for s in trace]
+    ax.plot(xs, bits_after, color="#bbbbbb", linewidth=0.8, alpha=0.6, zorder=1)
+
+    rej_xs = [s["step"] for s in trace if not s["accepted"] and s["bits_after"] == s["bits_after"]]
+    rej_ys = [s["bits_after"] for s in trace if not s["accepted"] and s["bits_after"] == s["bits_after"]]
+    acc_steps = [s for s in trace if s["accepted"]]
+    acc_xs = [s["step"] for s in acc_steps]
+    acc_ys = [s["bits_after"] for s in acc_steps]
+
+    ax.scatter(rej_xs, rej_ys, s=18, color="#d94040", alpha=0.5, marker="x", label="rejected", zorder=2)
+    ax.scatter(acc_xs, acc_ys, s=50, color="#2d8e2d", label="accepted", zorder=3)
+
+    table_rows: List[Tuple[int, str, float]] = []
+    if numbered:
+        for idx, s in enumerate(acc_steps, start=1):
+            ax.annotate(
+                str(idx),
+                xy=(s["step"], s["bits_after"]),
+                xytext=(0, 0), textcoords="offset points",
+                ha="center", va="center",
+                fontsize=5.5, fontweight="bold", color="white", zorder=4,
+            )
+            table_rows.append((idx, s.get("description", ""), s["bits_after"]))
+
+    n_acc = len(acc_xs)
+    search_summary = record.get("search_summary", {})
+    stop_reason = search_summary.get("stop_reason", "")
+
+    ax.set_title(
+        f"Hill-climb trace \u2014 iter {version}  ({n_acc} accepted / {len(trace)} steps)",
+        fontsize=12, fontweight="bold",
+    )
+    ax.set_xlabel("Proposal step", fontsize=10)
+    ax.set_ylabel("Total description length (bits)", fontsize=10)
+    ax.legend(fontsize=9, loc="upper right", framealpha=0.9)
+    ax.grid(alpha=0.2)
+
+    return table_rows
+
+
+def render_search_trace(
+    record: Dict[str, Any],
+    out_path: Path,
+    dpi: int = 300,
+) -> None:
+    """Render two variants of the hill-climb search trace:
+
+    1. ``<name>.{svg,png}``           — clean plot, no text labels on dots.
+    2. ``<name>_annotated.{svg,png}`` — numbered dots [1],[2],... with a
+       legend table of accepted proposals printed below the chart.
+    """
+    trace = record.get("search_trace", [])
+    if not trace:
+        return
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # --- Variant 1: clean (no labels) ---
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    fig.patch.set_facecolor("white")
+    _render_search_trace_axes(ax, record, numbered=False)
+    for suffix in [".svg", ".png"]:
+        fig.savefig(out_path.with_suffix(suffix), dpi=dpi, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+
+    # --- Variant 2: numbered + table ---
+    n_acc = sum(1 for s in trace if s["accepted"])
+    # Allocate space: plot on top, table below
+    table_height = max(1.2, 0.28 * n_acc)
+    fig = plt.figure(figsize=(8, 4.5 + table_height))
+    fig.patch.set_facecolor("white")
+    gs = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[4.5, table_height], hspace=0.25)
+
+    ax_plot = fig.add_subplot(gs[0])
+    rows = _render_search_trace_axes(ax_plot, record, numbered=True)
+
+    ax_tbl = fig.add_subplot(gs[1])
+    ax_tbl.axis("off")
+    if rows:
+        header = f"{'#':>3}  {'Step':>5}  {'Bits':>9}  Description"
+        lines = [header, "\u2500" * 70]
+        for idx, (num, desc, bits_val) in enumerate(rows):
+            # recover step number from trace
+            acc_steps = [s for s in trace if s["accepted"]]
+            step = acc_steps[idx]["step"] if idx < len(acc_steps) else "?"
+            short_desc = desc if len(desc) < 52 else desc[:49] + "..."
+            lines.append(f"[{num:>2}]  {step:>5}  {bits_val:>9.1f}  {short_desc}")
+        table_text = "\n".join(lines)
+        ax_tbl.text(
+            0.02, 0.98, table_text,
+            transform=ax_tbl.transAxes, va="top", ha="left",
+            fontsize=7, family="monospace", color="#333",
+        )
+
+    ann_path = out_path.parent / (out_path.stem + "_annotated")
+    for suffix in [".svg", ".png"]:
+        fig.savefig(ann_path.with_suffix(suffix), dpi=dpi, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
 
@@ -597,6 +860,13 @@ def main() -> int:
     # Discovery timeline
     print("Rendering discovery timeline...")
     render_discovery_timeline(records, summary, outdir / "discovery_timeline", dpi=args.dpi)
+
+    # Per-iteration search traces (SVG + PNG)
+    for record in records:
+        v = record["version"]
+        trace_path = outdir / f"search_trace_iter_{v:02d}"
+        print(f"Rendering search trace iter {v}...")
+        render_search_trace(record, trace_path, dpi=args.dpi)
 
     # Per-iteration frames
     if not args.skip_frames:
