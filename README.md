@@ -21,7 +21,7 @@ oscillators). The key design choice is that the world model is an explicit,
 interpretable equation -- not a black box -- and new structure is accepted only
 when it earns its complexity cost in bits.
 
-![alt text](image.png)
+![alt text](./assets/image.png)
 
 ## Architecture
 
@@ -268,6 +268,8 @@ python src/protein_world_model_cli.py run \
   --search-restarts 12 \
   --search-patience 50
 ```
+
+📄 Sample PDF resport produced by this run using `gpt-5.5` see [here](assets/protein_world_model_report.pdf).
 
 Use custom stages:
 
