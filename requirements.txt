@@ -1,0 +1,5 @@
+openai>=1.78
+numpy
+matplotlib
+networkx
+pillow

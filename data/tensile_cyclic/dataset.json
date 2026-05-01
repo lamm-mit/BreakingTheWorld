@@ -1,0 +1,1036 @@
+{
+  "initial_stage_ids": [
+    "stage_1_elastic_loading"
+  ],
+  "observable_descriptions": {
+    "direction": "Loading direction: +1 for loading/reloading, -1 for unloading.",
+    "strain": "Engineering strain applied during the tensile test."
+  },
+  "observations": [
+    {
+      "direction": 1,
+      "idx": 0,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.0,
+      "stress": 0.001107138021734317,
+      "t": 0
+    },
+    {
+      "direction": 1,
+      "idx": 1,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.0006666666666666666,
+      "stress": 1.6022043170909561,
+      "t": 1
+    },
+    {
+      "direction": 1,
+      "idx": 2,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.0013333333333333333,
+      "stress": 2.419942596840671,
+      "t": 2
+    },
+    {
+      "direction": 1,
+      "idx": 3,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.002,
+      "stress": 3.1984673451184533,
+      "t": 3
+    },
+    {
+      "direction": 1,
+      "idx": 4,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.0026666666666666666,
+      "stress": 4.924129626678782,
+      "t": 4
+    },
+    {
+      "direction": 1,
+      "idx": 5,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.003333333333333333,
+      "stress": 5.77418476716985,
+      "t": 5
+    },
+    {
+      "direction": 1,
+      "idx": 6,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.004,
+      "stress": 8.054129242337694,
+      "t": 6
+    },
+    {
+      "direction": 1,
+      "idx": 7,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.004666666666666666,
+      "stress": 10.539527054332412,
+      "t": 7
+    },
+    {
+      "direction": 1,
+      "idx": 8,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.005333333333333333,
+      "stress": 10.22368079997047,
+      "t": 8
+    },
+    {
+      "direction": 1,
+      "idx": 9,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.006,
+      "stress": 11.441572590162053,
+      "t": 9
+    },
+    {
+      "direction": 1,
+      "idx": 10,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.006666666666666666,
+      "stress": 13.774191178500011,
+      "t": 10
+    },
+    {
+      "direction": 1,
+      "idx": 11,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.007333333333333333,
+      "stress": 14.987864974010721,
+      "t": 11
+    },
+    {
+      "direction": 1,
+      "idx": 12,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.008,
+      "stress": 16.094872824098108,
+      "t": 12
+    },
+    {
+      "direction": 1,
+      "idx": 13,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.008666666666666666,
+      "stress": 16.49591209309595,
+      "t": 13
+    },
+    {
+      "direction": 1,
+      "idx": 14,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.009333333333333332,
+      "stress": 18.640340026449717,
+      "t": 14
+    },
+    {
+      "direction": 1,
+      "idx": 15,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.01,
+      "stress": 20.62577287501246,
+      "t": 15
+    },
+    {
+      "direction": 1,
+      "idx": 16,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.010666666666666666,
+      "stress": 20.12354024077676,
+      "t": 16
+    },
+    {
+      "direction": 1,
+      "idx": 17,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.011333333333333332,
+      "stress": 22.254812481730468,
+      "t": 17
+    },
+    {
+      "direction": 1,
+      "idx": 18,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.012,
+      "stress": 22.28889953417924,
+      "t": 18
+    },
+    {
+      "direction": 1,
+      "idx": 19,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.012666666666666666,
+      "stress": 24.172749367526855,
+      "t": 19
+    },
+    {
+      "direction": 1,
+      "idx": 20,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.013333333333333332,
+      "stress": 25.009105132654106,
+      "t": 20
+    },
+    {
+      "direction": 1,
+      "idx": 21,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.014,
+      "stress": 27.788417982032787,
+      "t": 21
+    },
+    {
+      "direction": 1,
+      "idx": 22,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.014666666666666666,
+      "stress": 28.192631500034,
+      "t": 22
+    },
+    {
+      "direction": 1,
+      "idx": 23,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.015333333333333332,
+      "stress": 30.910804589606197,
+      "t": 23
+    },
+    {
+      "direction": 1,
+      "idx": 24,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.016,
+      "stress": 32.141075977961805,
+      "t": 24
+    },
+    {
+      "direction": 1,
+      "idx": 25,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.016666666666666666,
+      "stress": 33.165095483166375,
+      "t": 25
+    },
+    {
+      "direction": 1,
+      "idx": 26,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.017333333333333333,
+      "stress": 32.4015829269282,
+      "t": 26
+    },
+    {
+      "direction": 1,
+      "idx": 27,
+      "stage_id": "stage_1_elastic_loading",
+      "stage_label": "Elastic loading",
+      "strain": 0.018,
+      "stress": 35.515176393738024,
+      "t": 27
+    },
+    {
+      "direction": 1,
+      "idx": 28,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.01927272727272727,
+      "stress": 38.501803694593576,
+      "t": 28
+    },
+    {
+      "direction": 1,
+      "idx": 29,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.020545454545454544,
+      "stress": 40.245045855998015,
+      "t": 29
+    },
+    {
+      "direction": 1,
+      "idx": 30,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.021818181818181816,
+      "stress": 39.10948938129307,
+      "t": 30
+    },
+    {
+      "direction": 1,
+      "idx": 31,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.02309090909090909,
+      "stress": 40.413784035040536,
+      "t": 31
+    },
+    {
+      "direction": 1,
+      "idx": 32,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.02436363636363636,
+      "stress": 40.33385183801349,
+      "t": 32
+    },
+    {
+      "direction": 1,
+      "idx": 33,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.025636363636363634,
+      "stress": 40.87092912914507,
+      "t": 33
+    },
+    {
+      "direction": 1,
+      "idx": 34,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.026909090909090907,
+      "stress": 42.951661653609456,
+      "t": 34
+    },
+    {
+      "direction": 1,
+      "idx": 35,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.02818181818181818,
+      "stress": 41.681648544267404,
+      "t": 35
+    },
+    {
+      "direction": 1,
+      "idx": 36,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.029454545454545452,
+      "stress": 42.80434368868953,
+      "t": 36
+    },
+    {
+      "direction": 1,
+      "idx": 37,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.030727272727272725,
+      "stress": 44.068354186429985,
+      "t": 37
+    },
+    {
+      "direction": 1,
+      "idx": 38,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.032,
+      "stress": 43.199559610531026,
+      "t": 38
+    },
+    {
+      "direction": 1,
+      "idx": 39,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.03327272727272727,
+      "stress": 44.09027155115938,
+      "t": 39
+    },
+    {
+      "direction": 1,
+      "idx": 40,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.034545454545454546,
+      "stress": 44.76983095206503,
+      "t": 40
+    },
+    {
+      "direction": 1,
+      "idx": 41,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.03581818181818182,
+      "stress": 45.22103334889567,
+      "t": 41
+    },
+    {
+      "direction": 1,
+      "idx": 42,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.03709090909090909,
+      "stress": 44.56790264878606,
+      "t": 42
+    },
+    {
+      "direction": 1,
+      "idx": 43,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.038363636363636364,
+      "stress": 46.25940885196741,
+      "t": 43
+    },
+    {
+      "direction": 1,
+      "idx": 44,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.039636363636363636,
+      "stress": 47.94786008783185,
+      "t": 44
+    },
+    {
+      "direction": 1,
+      "idx": 45,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.04090909090909091,
+      "stress": 45.88013177315545,
+      "t": 45
+    },
+    {
+      "direction": 1,
+      "idx": 46,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.04218181818181818,
+      "stress": 48.60725598946737,
+      "t": 46
+    },
+    {
+      "direction": 1,
+      "idx": 47,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.043454545454545454,
+      "stress": 48.51608639172196,
+      "t": 47
+    },
+    {
+      "direction": 1,
+      "idx": 48,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.04472727272727273,
+      "stress": 48.4198072238159,
+      "t": 48
+    },
+    {
+      "direction": 1,
+      "idx": 49,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.046,
+      "stress": 51.39957489170818,
+      "t": 49
+    },
+    {
+      "direction": 1,
+      "idx": 50,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.04727272727272727,
+      "stress": 50.900909773934096,
+      "t": 50
+    },
+    {
+      "direction": 1,
+      "idx": 51,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.048545454545454544,
+      "stress": 49.764798665791254,
+      "t": 51
+    },
+    {
+      "direction": 1,
+      "idx": 52,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.04981818181818182,
+      "stress": 51.554112539778615,
+      "t": 52
+    },
+    {
+      "direction": 1,
+      "idx": 53,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.05109090909090909,
+      "stress": 52.66256442695607,
+      "t": 53
+    },
+    {
+      "direction": 1,
+      "idx": 54,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.05236363636363636,
+      "stress": 52.643742368176056,
+      "t": 54
+    },
+    {
+      "direction": 1,
+      "idx": 55,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.053636363636363635,
+      "stress": 54.11197461237651,
+      "t": 55
+    },
+    {
+      "direction": 1,
+      "idx": 56,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.05490909090909091,
+      "stress": 54.134805486245696,
+      "t": 56
+    },
+    {
+      "direction": 1,
+      "idx": 57,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.05618181818181818,
+      "stress": 55.506116193180645,
+      "t": 57
+    },
+    {
+      "direction": 1,
+      "idx": 58,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.05745454545454545,
+      "stress": 56.92479264654012,
+      "t": 58
+    },
+    {
+      "direction": 1,
+      "idx": 59,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.058727272727272725,
+      "stress": 55.76016182533458,
+      "t": 59
+    },
+    {
+      "direction": 1,
+      "idx": 60,
+      "stage_id": "stage_2_post_yield_loading",
+      "stage_label": "Post-yield loading",
+      "strain": 0.06,
+      "stress": 57.30282474935065,
+      "t": 60
+    },
+    {
+      "direction": -1,
+      "idx": 61,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.06,
+      "stress": 57.30282474935065,
+      "t": 61
+    },
+    {
+      "direction": -1,
+      "idx": 62,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.059,
+      "stress": 55.784541570103244,
+      "t": 62
+    },
+    {
+      "direction": -1,
+      "idx": 63,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.057999999999999996,
+      "stress": 53.15152492493487,
+      "t": 63
+    },
+    {
+      "direction": -1,
+      "idx": 64,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.056999999999999995,
+      "stress": 52.24862856314759,
+      "t": 64
+    },
+    {
+      "direction": -1,
+      "idx": 65,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.056,
+      "stress": 51.14342362447595,
+      "t": 65
+    },
+    {
+      "direction": -1,
+      "idx": 66,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.055,
+      "stress": 50.678887484890375,
+      "t": 66
+    },
+    {
+      "direction": -1,
+      "idx": 67,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.054,
+      "stress": 49.45069980670872,
+      "t": 67
+    },
+    {
+      "direction": -1,
+      "idx": 68,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.053,
+      "stress": 45.77882498676417,
+      "t": 68
+    },
+    {
+      "direction": -1,
+      "idx": 69,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.052,
+      "stress": 44.804821870611654,
+      "t": 69
+    },
+    {
+      "direction": -1,
+      "idx": 70,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.051000000000000004,
+      "stress": 44.65221308031609,
+      "t": 70
+    },
+    {
+      "direction": -1,
+      "idx": 71,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.05,
+      "stress": 40.82682219424296,
+      "t": 71
+    },
+    {
+      "direction": -1,
+      "idx": 72,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.049,
+      "stress": 40.753147121542874,
+      "t": 72
+    },
+    {
+      "direction": -1,
+      "idx": 73,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.048,
+      "stress": 39.63244176689692,
+      "t": 73
+    },
+    {
+      "direction": -1,
+      "idx": 74,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.047,
+      "stress": 39.401313479558134,
+      "t": 74
+    },
+    {
+      "direction": -1,
+      "idx": 75,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.046,
+      "stress": 37.44046351051368,
+      "t": 75
+    },
+    {
+      "direction": -1,
+      "idx": 76,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.045,
+      "stress": 35.07550792180002,
+      "t": 76
+    },
+    {
+      "direction": -1,
+      "idx": 77,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.044,
+      "stress": 33.58828169531004,
+      "t": 77
+    },
+    {
+      "direction": -1,
+      "idx": 78,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.043,
+      "stress": 32.24482413953387,
+      "t": 78
+    },
+    {
+      "direction": -1,
+      "idx": 79,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.042,
+      "stress": 32.39117646041055,
+      "t": 79
+    },
+    {
+      "direction": -1,
+      "idx": 80,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.041,
+      "stress": 29.184777551684423,
+      "t": 80
+    },
+    {
+      "direction": -1,
+      "idx": 81,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.04,
+      "stress": 27.846687650471743,
+      "t": 81
+    },
+    {
+      "direction": -1,
+      "idx": 82,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.03900000000000001,
+      "stress": 26.987330160556752,
+      "t": 82
+    },
+    {
+      "direction": -1,
+      "idx": 83,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.038000000000000006,
+      "stress": 25.1113065994222,
+      "t": 83
+    },
+    {
+      "direction": -1,
+      "idx": 84,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.037000000000000005,
+      "stress": 23.59244419483086,
+      "t": 84
+    },
+    {
+      "direction": -1,
+      "idx": 85,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.036000000000000004,
+      "stress": 21.317339571164055,
+      "t": 85
+    },
+    {
+      "direction": -1,
+      "idx": 86,
+      "stage_id": "stage_3_unloading",
+      "stage_label": "Unloading",
+      "strain": 0.035,
+      "stress": 20.85963067876531,
+      "t": 86
+    },
+    {
+      "direction": 1,
+      "idx": 87,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.035,
+      "stress": 20.85963067876531,
+      "t": 87
+    },
+    {
+      "direction": 1,
+      "idx": 88,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.035869565217391305,
+      "stress": 23.354675679100502,
+      "t": 88
+    },
+    {
+      "direction": 1,
+      "idx": 89,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.036739130434782614,
+      "stress": 24.328857157156957,
+      "t": 89
+    },
+    {
+      "direction": 1,
+      "idx": 90,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.03760869565217392,
+      "stress": 25.156021220880856,
+      "t": 90
+    },
+    {
+      "direction": 1,
+      "idx": 91,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.03847826086956522,
+      "stress": 27.216722505061593,
+      "t": 91
+    },
+    {
+      "direction": 1,
+      "idx": 92,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.03934782608695653,
+      "stress": 27.747482242777643,
+      "t": 92
+    },
+    {
+      "direction": 1,
+      "idx": 93,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.04021739130434783,
+      "stress": 30.439219960769513,
+      "t": 93
+    },
+    {
+      "direction": 1,
+      "idx": 94,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.04108695652173913,
+      "stress": 30.927144176113877,
+      "t": 94
+    },
+    {
+      "direction": 1,
+      "idx": 95,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.041956521739130434,
+      "stress": 32.897501585681084,
+      "t": 95
+    },
+    {
+      "direction": 1,
+      "idx": 96,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.04282608695652174,
+      "stress": 32.65186337599526,
+      "t": 96
+    },
+    {
+      "direction": 1,
+      "idx": 97,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.043695652173913045,
+      "stress": 35.567645314311946,
+      "t": 97
+    },
+    {
+      "direction": 1,
+      "idx": 98,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.04456521739130435,
+      "stress": 35.17897168189374,
+      "t": 98
+    },
+    {
+      "direction": 1,
+      "idx": 99,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.045434782608695656,
+      "stress": 36.310037597947264,
+      "t": 99
+    },
+    {
+      "direction": 1,
+      "idx": 100,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.04630434782608696,
+      "stress": 39.312038862989766,
+      "t": 100
+    },
+    {
+      "direction": 1,
+      "idx": 101,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.04717391304347826,
+      "stress": 40.221123754295476,
+      "t": 101
+    },
+    {
+      "direction": 1,
+      "idx": 102,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.04804347826086956,
+      "stress": 42.62445280914667,
+      "t": 102
+    },
+    {
+      "direction": 1,
+      "idx": 103,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.04891304347826087,
+      "stress": 45.94358909238187,
+      "t": 103
+    },
+    {
+      "direction": 1,
+      "idx": 104,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.049782608695652174,
+      "stress": 44.622016244479596,
+      "t": 104
+    },
+    {
+      "direction": 1,
+      "idx": 105,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.05065217391304348,
+      "stress": 46.25703300282431,
+      "t": 105
+    },
+    {
+      "direction": 1,
+      "idx": 106,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.051521739130434785,
+      "stress": 48.45221704862269,
+      "t": 106
+    },
+    {
+      "direction": 1,
+      "idx": 107,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.05239130434782609,
+      "stress": 50.16059286964352,
+      "t": 107
+    },
+    {
+      "direction": 1,
+      "idx": 108,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.05326086956521739,
+      "stress": 51.00839900193245,
+      "t": 108
+    },
+    {
+      "direction": 1,
+      "idx": 109,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.05413043478260869,
+      "stress": 52.43286686156226,
+      "t": 109
+    },
+    {
+      "direction": 1,
+      "idx": 110,
+      "stage_id": "stage_4_reloading",
+      "stage_label": "Reloading",
+      "strain": 0.055,
+      "stress": 54.70221665960849,
+      "t": 110
+    }
+  ],
+  "protocol_descriptions": {
+    "stage_1_elastic_loading": "Initial monotonic loading at low strain. Expected to be close to linear elastic behavior.",
+    "stage_2_post_yield_loading": "Continued monotonic loading past the yield threshold. This may reveal hardening, curvature, or a slope change relative to elastic loading.",
+    "stage_3_unloading": "Unloading from the high-strain state. This probes path dependence, hysteresis, residual strain, or a changed tangent stiffness.",
+    "stage_4_reloading": "Reloading after partial unloading. It starts continuously from the final unloading stress and probes whether the material rejoins the loading curve or follows a history-dependent branch."
+  },
+  "source": "tensile_test_oracle(seed=7, noise_std=0.9)",
+  "stage_order": [
+    "stage_1_elastic_loading",
+    "stage_2_post_yield_loading",
+    "stage_3_unloading",
+    "stage_4_reloading"
+  ],
+  "stage_prerequisites": {
+    "stage_2_post_yield_loading": [
+      "stage_1_elastic_loading"
+    ],
+    "stage_3_unloading": [
+      "stage_2_post_yield_loading"
+    ],
+    "stage_4_reloading": [
+      "stage_3_unloading"
+    ]
+  },
+  "system_description": "Synthetic one-dimensional tensile-test experiment. The observable inputs are engineering strain and loading direction; the target is measured stress. The physical protocol is ordered: begin with elastic loading, continue into post-yield loading, unload from the high-strain state, then reload from the partially unloaded state. Later protocol stages are not physically collectable until their prerequisites have occurred, so data discovery should respect this experimental sequence rather than freely jumping to any hidden slice.",
+  "target_description": "Measured stress response of the material specimen."
+}
