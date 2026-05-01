@@ -486,3 +486,20 @@ new live path, implement the `OracleAdapter` protocol in `src/oracle_adapters.py
 
 The saved-dataset route remains useful for reproducible snapshots. The live
 oracle route is the preferred abstraction for open-ended active discovery.
+
+## Citation
+
+`bibtex
+@article{buehler2026why,
+  author   = {Markus J. Buehler},
+  title    = {Why We Must Break the World},
+  journal  = {ChemRxiv},
+  volume   = {2026},
+  number   = {0406},
+  year     = {2026},
+  doi      = {10.26434/chemrxiv.15001674/v1},
+  url      = {https://chemrxiv.org/doi/abs/10.26434/chemrxiv.15001674/v1},
+  eprint   = {https://chemrxiv.org/doi/pdf/10.26434/chemrxiv.15001674/v1},
+  abstract = {Artificial intelligence is entering materials science and manufacturing at a moment when retrieval is often mistaken for discovery. We argue that models trained to optimize plausibility within a closed theoretical system are structurally biased toward interpolation and away from the anomalies from which scientific revolutions arise. In materials and manufacturing, this limitation becomes acute because the design space is combinatorial, multiscale, and physically constrained. What is needed is not another assistant for summarizing what is already known, but systems that can assemble compositional world models, invert the forward problem, falsify their own principles, and test those principles against simulation and fabrication. Drawing on recent work in graph-native reasoning, inverse protein design, multi-agent scientific discovery, and AI-integrated manufacturing, we outline an architecture for discovery built on three capabilities: world-model construction, adversarial falsification, and physical grounding. The central claim is that materials innovation will accelerate when AI moves beyond retrieval and surrogate prediction toward systems that can generate, challenge, and physically realize new hypotheses. In that sense, discovery requires breaking the current world model in order to build the next one.}
+}
+`
