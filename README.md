@@ -224,8 +224,7 @@ proteins where GNM should work well, then reveals proteins with flexible termini
 modes), and finally a mixed validation set. At each stage, the current DAG
 equation is challenged and revised only if MDL supports the added structure.
 
-The GNM implementation is self-contained in this repo (no ProDy dependency).
-PDB files are cached locally in `data/pdb_cache/`.
+The GNM implementation is self-contained in this repo. Relevant PDB files are cached locally in `data/pdb_cache/`.
 
 Build only the staged dataset:
 
