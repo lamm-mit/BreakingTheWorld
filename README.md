@@ -123,6 +123,8 @@ MDL minimum at the cost of wall-clock time.
 - `src/create_synthetic_dataset.py`: CLI for creating reusable dataset snapshots.
 - `src/create_protein_flex_dataset.py`: standalone CLI for building protein flexibility datasets.
 - `src/rerender_figures.py`: CLI to re-render publication-quality figures (SVG/PNG) from existing run directories.
+- `src/compute_kan_extension.py`: post-hoc left Kan extension analysis across all iteration transitions.
+- `src/render_protein_slide.py`: renders a protein stages slide with C-alpha backbone traces colored by B-factor.
 
 ## Synthetic Examples
 
@@ -496,6 +498,35 @@ python src/rerender_figures.py runs/protein_flex_llm_deep/discovery --outdir my_
 # Skip per-iteration frames and GIF (only produce summary plots)
 python src/rerender_figures.py runs/protein_flex_llm_deep/discovery --skip-frames
 ```
+
+## Kan Extension Analysis
+
+`src/compute_kan_extension.py` performs a post-hoc categorical analysis of
+each iteration transition in a completed discovery run, following the
+framework in [Buehler 2026, "Discovery as Regime Enlargement"]. For each
+transition t → t+1 it:
+
+1. Extracts the schema categories S_t and S_{t+1} from the saved DAG records.
+2. Identifies shared, new, and retracted artifact types.
+3. Computes the comma category (u ↓ A') for every object A' in S_{t+1}.
+4. Evaluates the left Kan extension Lan_u I_t — empty when the comma
+   category is empty (the categorical obstruction to transport).
+5. Computes the residual content that the discovery move must supply.
+
+```bash
+# Default: analyzes runs/protein_flex_llm_deep/discovery
+python src/compute_kan_extension.py
+
+# Explicit run directory
+python src/compute_kan_extension.py --run-dir runs/protein_flex_llm_deep/discovery
+
+# Custom output and DPI
+python src/compute_kan_extension.py --run-dir runs/my_run/discovery --outdir my_figures --dpi 400
+```
+
+Outputs per-transition tables (`kan_extension_0_1.{svg,png}`, etc.) and a
+combined overview (`kan_extension_overview.{svg,png}`) showing the regime
+enlargement trajectory with discovery cost per transition.
 
 ## Custom Systems
 
