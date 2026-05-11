@@ -85,8 +85,10 @@ class SchemaCategory:
 class KanResult:
     """Result of the Kan extension computation for one object."""
     object_name: str
-    status: str          # "shared", "new_reachable", "new_isolated", "retracted"
-    comma_objects: List[str]  # objects in the comma category
+    status: str          # "shared", "new_generator_reachable",
+                         # "new_composite_reachable", "new_isolated", "retracted"
+    comma_objects: List[str]  # objects in the generator-level comma category
+    composite_path: str       # how this type is reachable via composites (if any)
     transported_size: int    # |Lan_u I_t(A')|
     actual_size: int         # |I'_{t+1}(A')|
     residual_size: int       # |R(A')|
@@ -144,15 +146,19 @@ def _base_physics_morphisms() -> List[Tuple[str, str, str, str]]:
     ]
 
 
-# Residue counts per stage (cumulative)
-STAGE_RESIDUES = {0: 122, 1: 263, 2: 428, 3: 480}  # from metrics.csv n column
+# Chain counts per iteration (cumulative: 2 chains per stage)
 STAGE_CHAINS = {0: 2, 1: 4, 2: 6, 3: 8}
+
+
+def _n_residues(record: Dict) -> int:
+    """Get accumulated residue count from the record's bits.n field."""
+    return int(record.get("bits", {}).get("n", 0))
 
 
 def build_schema_iter0(record: Dict) -> SchemaCategory:
     """Iter 0: bfactor_z = β · gnm_fluct_z (simple linear)."""
     sc = SchemaCategory("S₀ (iter 0)")
-    n_c, n_r = STAGE_CHAINS[0], STAGE_RESIDUES[0]
+    n_c, n_r = STAGE_CHAINS[0], _n_residues(record)
     for name, kind, desc, fib in _base_physics_objects(n_c, n_r):
         sc.add_obj(name, kind, desc, fib)
     for name, src, tgt, desc in _base_physics_morphisms():
@@ -169,7 +175,7 @@ def build_schema_iter0(record: Dict) -> SchemaCategory:
 def build_schema_iter1(record: Dict) -> SchemaCategory:
     """Iter 1: terminal_exp × relu(gnm_fluct_z) + mode1_abs_z."""
     sc = SchemaCategory("S₁ (iter 1)")
-    n_c, n_r = STAGE_CHAINS[1], STAGE_RESIDUES[1]
+    n_c, n_r = STAGE_CHAINS[1], _n_residues(record)
     for name, kind, desc, fib in _base_physics_objects(n_c, n_r):
         sc.add_obj(name, kind, desc, fib)
     for name, src, tgt, desc in _base_physics_morphisms():
@@ -205,7 +211,7 @@ def build_schema_iter1(record: Dict) -> SchemaCategory:
 def build_schema_iter2(record: Dict) -> SchemaCategory:
     """Iter 2: gnm_fluct_z + mode1_abs_z (additive, retracted terminal)."""
     sc = SchemaCategory("S₂ (iter 2)")
-    n_c, n_r = STAGE_CHAINS[2], STAGE_RESIDUES[2]
+    n_c, n_r = STAGE_CHAINS[2], _n_residues(record)
     for name, kind, desc, fib in _base_physics_objects(n_c, n_r):
         sc.add_obj(name, kind, desc, fib)
     for name, src, tgt, desc in _base_physics_morphisms():
@@ -224,7 +230,7 @@ def build_schema_iter2(record: Dict) -> SchemaCategory:
 def build_schema_iter3(record: Dict) -> SchemaCategory:
     """Iter 3: gnm_fluct_log_z × relu(mode1_abs_z + 2.27)."""
     sc = SchemaCategory("S₃ (iter 3)")
-    n_c, n_r = STAGE_CHAINS[3], STAGE_RESIDUES[3]
+    n_c, n_r = STAGE_CHAINS[3], _n_residues(record)
     for name, kind, desc, fib in _base_physics_objects(n_c, n_r):
         sc.add_obj(name, kind, desc, fib)
     for name, src, tgt, desc in _base_physics_morphisms():
@@ -263,35 +269,57 @@ SCHEMA_BUILDERS = [build_schema_iter0, build_schema_iter1,
 # Kan extension computation
 # =====================================================================
 
-def compute_comma_category(
+def _generator_comma(
     obj_name: str,
-    schema_old: SchemaCategory,
     schema_new: SchemaCategory,
     shared: Set[str],
 ) -> List[str]:
-    """Compute the comma category (u ↓ A') for object A' in S_{t+1}.
+    """Generator-level comma category: immediate morphisms from u(S_b) only.
 
-    Returns list of old objects X such that there exists a morphism
-    u(X) → A' in S_{t+1}.  For shared objects, the identity morphism
-    gives a terminal object in the comma category.
+    Returns old objects X with a single generating morphism u(X) → A'.
+    Does NOT follow composites or multi-input product morphisms.
     """
     if obj_name in shared:
-        return [obj_name]  # identity morphism: terminal object
-
-    # Check if any morphism in the NEW schema has target = obj_name
-    # and source (or one of sources) in the shared objects
-    comma_objects = []
+        return [obj_name]
+    comma = []
     for mor in schema_new.morphisms.values():
-        if mor.target == obj_name:
-            # Single-source morphism
+        if mor.target == obj_name and not mor.sources:
+            # Unary morphism with source in old schema
             if mor.source in shared:
-                comma_objects.append(mor.source)
-            # Multi-source: ALL sources must be reachable from shared
-            if mor.sources:
-                all_sources = list(mor.sources)
-                if all(s in shared for s in all_sources):
-                    comma_objects.extend(all_sources)
-    return comma_objects
+                comma.append(mor.source)
+    return comma
+
+
+def _composite_reachability(
+    schema_new: SchemaCategory,
+    shared: Set[str],
+) -> Dict[str, str]:
+    """Transitive reachability through composites and multi-input morphisms.
+
+    Returns a dict mapping each reachable new object to a human-readable
+    path description.  Uses fixed-point iteration: start from shared
+    objects, then iteratively add targets of morphisms whose sources are
+    all reachable.
+    """
+    reachable: Dict[str, str] = {name: "shared (identity)" for name in shared}
+    changed = True
+    while changed:
+        changed = False
+        for mor in schema_new.morphisms.values():
+            tgt = mor.target
+            if tgt in reachable:
+                continue
+            # Determine all source objects for this morphism
+            srcs = list(mor.sources) if mor.sources else [mor.source]
+            if all(s in reachable for s in srcs):
+                if len(srcs) == 1:
+                    path = f"via {mor.name}: {srcs[0]} → {tgt}"
+                else:
+                    src_str = " × ".join(srcs)
+                    path = f"via {mor.name}: ({src_str}) → {tgt}"
+                reachable[tgt] = path
+                changed = True
+    return reachable
 
 
 def compute_transition(
@@ -302,7 +330,20 @@ def compute_transition(
     record_old: Dict,
     record_new: Dict,
 ) -> TransitionResult:
-    """Compute the full Kan extension analysis for one transition."""
+    """Compute the full Kan extension analysis for one transition.
+
+    Two levels of analysis are performed:
+      1. **Generator-level** comma category — only immediate unary
+         morphisms from u(S_b).  This is the 1-categorical shadow.
+      2. **Composite reachability** — transitive closure through all
+         morphisms in S_{b'}, including multi-input (product) morphisms.
+         This is the multicategorical/hypergraph reading.
+
+    An object whose generator-level comma category is empty but which
+    is reachable via composites is labeled ``new_composite_reachable``:
+    old evidence reaches it, but only through new intermediate structure
+    (new morphisms, new product operations, or new parameters).
+    """
     old_objs = schema_old.object_names()
     new_objs = schema_new.object_names()
 
@@ -310,41 +351,64 @@ def compute_transition(
     added = new_objs - old_objs
     retracted = old_objs - new_objs
 
+    # Composite reachability (multicategorical reading)
+    composite_reach = _composite_reachability(schema_new, shared)
+
     kan_results: Dict[str, KanResult] = {}
 
     for obj_name in sorted(new_objs):
         obj = schema_new.objects[obj_name]
-        comma = compute_comma_category(obj_name, schema_old, schema_new, shared)
+        gen_comma = _generator_comma(obj_name, schema_new, shared)
+        comp_path = composite_reach.get(obj_name, "")
 
         if obj_name in shared:
-            # Shared object: Lan = I_t(A), transported exactly
             old_fiber = schema_old.objects[obj_name].fiber_size
             new_fiber = obj.fiber_size
             kan_results[obj_name] = KanResult(
                 object_name=obj_name,
                 status="shared",
-                comma_objects=comma,
+                comma_objects=gen_comma,
+                composite_path="identity",
                 transported_size=old_fiber,
                 actual_size=new_fiber,
                 residual_size=max(0, new_fiber - old_fiber),
             )
-        elif comma:
-            # New but reachable: transport from comma category
+        elif gen_comma:
+            # New but generator-reachable (non-empty 1-categorical comma)
             transported = sum(
                 schema_old.objects[c].fiber_size
-                for c in comma if c in schema_old.objects
+                for c in gen_comma if c in schema_old.objects
             )
             kan_results[obj_name] = KanResult(
                 object_name=obj_name,
-                status="new_reachable",
-                comma_objects=comma,
+                status="new_generator_reachable",
+                comma_objects=gen_comma,
+                composite_path=comp_path,
                 transported_size=transported,
                 actual_size=obj.fiber_size,
                 residual_size=max(0, obj.fiber_size - transported),
             )
+        elif comp_path:
+            # Generator-level comma is empty, but reachable via composites
+            # (through new intermediate types or multi-input morphisms).
+            # The Lan in the 1-categorical shadow is ∅; old evidence
+            # reaches this type only through new structural morphisms.
+            bits = 0.0
+            for mor in schema_new.morphisms.values():
+                if mor.target == obj_name:
+                    bits += mor.bits_cost
+            kan_results[obj_name] = KanResult(
+                object_name=obj_name,
+                status="new_composite_reachable",
+                comma_objects=[],
+                composite_path=comp_path,
+                transported_size=0,
+                actual_size=obj.fiber_size,
+                residual_size=obj.fiber_size,
+                bits_cost=bits,
+            )
         else:
-            # New and isolated: comma category empty → Lan = ∅
-            # Compute bits cost for this object's contribution
+            # Truly isolated: unreachable even via composites
             bits = 0.0
             for mor in schema_new.morphisms.values():
                 if mor.target == obj_name:
@@ -353,19 +417,21 @@ def compute_transition(
                 object_name=obj_name,
                 status="new_isolated",
                 comma_objects=[],
+                composite_path="",
                 transported_size=0,
                 actual_size=obj.fiber_size,
                 residual_size=obj.fiber_size,
                 bits_cost=bits,
             )
 
-    # Also track retracted objects
+    # Track retracted objects
     for obj_name in sorted(retracted):
         obj = schema_old.objects[obj_name]
         kan_results[obj_name] = KanResult(
             object_name=obj_name,
             status="retracted",
             comma_objects=[],
+            composite_path="",
             transported_size=obj.fiber_size,
             actual_size=0,
             residual_size=0,
@@ -409,21 +475,24 @@ def compute_transition(
 
 _STATUS_COLORS = {
     "shared": "#d0e8f2",
-    "new_reachable": "#d4edda",
+    "new_generator_reachable": "#d4edda",
+    "new_composite_reachable": "#fff3cd",
     "new_isolated": "#fde4c8",
     "retracted": "#f8d7da",
 }
 _STATUS_EDGE = {
     "shared": "#3a7ca5",
-    "new_reachable": "#2d8e2d",
+    "new_generator_reachable": "#2d8e2d",
+    "new_composite_reachable": "#856404",
     "new_isolated": "#c48220",
     "retracted": "#c44040",
 }
 _STATUS_LABELS = {
     "shared": "Shared (transported)",
-    "new_reachable": "New, reachable (non-empty comma)",
-    "new_isolated": "New, isolated (empty comma → Lan = ∅)",
-    "retracted": "Retracted (lost from old schema)",
+    "new_generator_reachable": "New, generator-reachable",
+    "new_composite_reachable": "New, composite-reachable only",
+    "new_isolated": "Isolated (Lan = ∅)",
+    "retracted": "Retracted",
 }
 
 
@@ -452,7 +521,7 @@ def render_transition_table(
     )
 
     # Table headers
-    headers = ["Object A'", "Status", "(u ↓ A')", "|Lan_u I_t|",
+    headers = ["Object A'", "Status", "(u ↓ A') gen.", "|Lan_u I_t|",
                "|I'_{t+1}|", "|Residual|"]
     col_x = [0.02, 0.22, 0.42, 0.62, 0.74, 0.86]
     y_top = 0.92
@@ -612,20 +681,25 @@ def render_overview(
                     f"+{gain:.1f} bits\n({tr.break_type.replace('_', ' ')})",
                     ha="center", va="bottom", fontsize=8, fontweight="bold")
 
-    # Count isolated objects per transition
+    # Count objects with empty generator-level comma per transition
     for i, tr in enumerate(transitions):
-        n_isolated = sum(1 for r in tr.kan_results.values()
-                         if r.status == "new_isolated")
-        if n_isolated > 0:
+        n_gen_empty = sum(1 for r in tr.kan_results.values()
+                          if r.status in ("new_composite_reachable", "new_isolated"))
+        n_truly_isolated = sum(1 for r in tr.kan_results.values()
+                               if r.status == "new_isolated")
+        if n_gen_empty > 0:
+            label_parts = [f"{n_gen_empty} gen-empty"]
+            if n_truly_isolated > 0 and n_truly_isolated < n_gen_empty:
+                label_parts.append(f"({n_truly_isolated} isolated)")
             ax_bot.text(i, gains[i] * 0.5,
-                        f"{n_isolated} empty\ncomma cat.",
+                        "\n".join(label_parts),
                         ha="center", va="center", fontsize=7,
                         color="white", fontweight="bold")
 
     ax_bot.set_xticks(range(n_trans))
     ax_bot.set_xticklabels(labels, fontsize=10)
     ax_bot.set_ylabel("MDL Break Gain (bits)", fontsize=11)
-    ax_bot.set_title("Discovery Cost per Transition", fontsize=12,
+    ax_bot.set_title("MDL Break Gain per Transition", fontsize=12,
                      fontweight="bold")
     ax_bot.grid(alpha=0.2, axis="y")
 
@@ -658,11 +732,13 @@ def print_summary(transitions: List[TransitionResult]) -> None:
             kr = tr.kan_results.get(name)
             if kr:
                 comma_str = ", ".join(kr.comma_objects) if kr.comma_objects else "∅"
+                comp = f"  comp: {kr.composite_path}" if kr.composite_path and not kr.comma_objects else ""
                 transported = kr.transported_size
                 residual = kr.residual_size
-                print(f"    {name:35s}  (u↓A')={comma_str:20s}  "
-                      f"Lan={transported:>4d}  actual={kr.actual_size:>4d}  "
-                      f"residual={residual:>4d}")
+                print(f"    {name:35s}  gen(u↓A')={comma_str:20s}  "
+                      f"Lan={transported:>5d}  actual={kr.actual_size:>5d}  "
+                      f"residual={residual:>5d}  [{kr.status}]"
+                      f"{comp}")
 
         # List retracted objects
         for name in sorted(tr.retracted_objects):
@@ -673,35 +749,45 @@ def print_summary(transitions: List[TransitionResult]) -> None:
 
         print(f"\n  MDL break gain: {tr.total_discovery_bits:+.1f} bits")
 
-    # The three key sentences
+    # Key findings
     print("\n" + "=" * 72)
-    print("KEY CATEGORICAL FINDINGS")
+    print("KEY CATEGORICAL FINDINGS (two-level analysis)")
     print("=" * 72)
 
     for tr in transitions:
+        gen_reachable = [name for name, kr in tr.kan_results.items()
+                         if kr.status == "new_generator_reachable"]
+        comp_reachable = [name for name, kr in tr.kan_results.items()
+                          if kr.status == "new_composite_reachable"]
         isolated = [name for name, kr in tr.kan_results.items()
                     if kr.status == "new_isolated"]
-        reachable = [name for name, kr in tr.kan_results.items()
-                     if kr.status == "new_reachable"]
         retracted = sorted(tr.retracted_objects)
 
+        if gen_reachable:
+            print(f"\n  iter {tr.iteration_from}→{tr.iteration_to}: "
+                  f"Generator-reachable new types (non-empty 1-cat comma): "
+                  f"{', '.join(gen_reachable)}.")
+            print(f"    → Old evidence transports via a single new unary morphism.")
+        if comp_reachable:
+            print(f"\n  iter {tr.iteration_from}→{tr.iteration_to}: "
+                  f"Composite-reachable new types (empty generator comma, "
+                  f"reachable via multicategorical composites): "
+                  f"{', '.join(comp_reachable)}.")
+            for name in comp_reachable:
+                kr = tr.kan_results[name]
+                print(f"    {name}: {kr.composite_path}")
+            print(f"    → In the 1-categorical shadow, Lan_u I_t = ∅ "
+                  f"at these types.")
+            print(f"    → In the multicategorical reading, old evidence "
+                  f"reaches them through NEW intermediate structure.")
         if isolated:
             print(f"\n  iter {tr.iteration_from}→{tr.iteration_to}: "
-                  f"The comma category (u ↓ A') is EMPTY for: "
+                  f"Truly isolated types (unreachable even via composites): "
                   f"{', '.join(isolated)}.")
-            print(f"    → Lan_u I_t(A') = ∅ for these types. "
-                  f"No transport of iter-{tr.iteration_from} evidence "
-                  f"can populate these fibers.")
-        if reachable:
-            print(f"\n  iter {tr.iteration_from}→{tr.iteration_to}: "
-                  f"Reachable new types (non-empty comma): "
-                  f"{', '.join(reachable)}.")
-            print(f"    → Old evidence can be freely transported "
-                  f"to these types via new morphisms.")
+            print(f"    → Lan_u I_t(A') = ∅ in both readings.")
         if retracted:
             print(f"\n  iter {tr.iteration_from}→{tr.iteration_to}: "
-                  f"RETRACTED types with no counterpart in new regime: "
-                  f"{', '.join(retracted)}.")
+                  f"RETRACTED types: {', '.join(retracted)}.")
             print(f"    → These fibers are lost; the regime contracted.")
 
 
