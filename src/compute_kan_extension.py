@@ -464,7 +464,7 @@ def compute_transition(
         retracted_objects=retracted,
         kan_results=kan_results,
         total_discovery_bits=break_gain,
-        structural_bits=max(0, structural_bits),
+        structural_bits=structural_bits,
         parameter_bits=parameter_bits,
     )
 
@@ -573,7 +573,7 @@ def render_transition_table(
         f"New: {len(result.new_objects)}  |  "
         f"Retracted: {len(result.retracted_objects)}\n"
         f"MDL break gain: {result.total_discovery_bits:+.1f} bits  |  "
-        f"ΔL_model: {result.structural_bits:.1f} bits  |  "
+        f"ΔL_model: {result.structural_bits:+.1f} bits  |  "
         f"New parameter bits: {result.parameter_bits:.0f} bits"
     )
     ax.text(0.5, max(0.02, y_summary), summary_text,

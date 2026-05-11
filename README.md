@@ -501,17 +501,45 @@ python src/rerender_figures.py runs/protein_flex_llm_deep/discovery --skip-frame
 
 ## Kan Extension Analysis
 
-`src/compute_kan_extension.py` performs a post-hoc categorical analysis of
-each iteration transition in a completed discovery run, following the
-framework in [Buehler 2026, "Discovery as Regime Enlargement"]. For each
-transition t → t+1 it:
+### Background
 
-1. Extracts the schema categories S_t and S_{t+1} from the saved DAG records.
-2. Identifies shared, new, and retracted artifact types.
-3. Computes the comma category (u ↓ A') for every object A' in S_{t+1}.
-4. Evaluates the left Kan extension Lan_u I_t — empty when the comma
-   category is empty (the categorical obstruction to transport).
-5. Computes the residual content that the discovery move must supply.
+In the categorical framework of
+[Buehler 2026, "Discovery as Regime Enlargement"](https://doi.org/10.26434/chemrxiv.15001674/v1),
+a discovery system's state at iteration t is a copresheaf
+I_t: S_b → **Set** that assigns to each artifact type (PDB chain, contact
+graph, GNM spectrum, symbolic DAG, etc.) the set of artifacts currently
+available. A schema category S_b encodes the typed operations the system
+can perform (build contacts, diagonalize, fit, etc.).
+
+When evidence forces a revision, the system transitions from schema S_b to
+an enlarged schema S_{b'} via an inclusion functor u: S_b → S_{b'}. The
+**left Kan extension** Lan_u I_t transports the old artifact state into the
+new schema — it is the minimal, purely functorial way to reinterpret old
+evidence in the new vocabulary. For each new type A' in S_{b'}:
+
+- If A' receives a morphism from an old type (non-empty comma category
+  (u ↓ A')), old evidence can be freely lifted to populate A'.
+- If the comma category is empty, Lan_u I_t(A') = ∅: no reinterpretation
+  of old evidence can populate this type. Any artifact accepted here is
+  genuinely new content that the discovery move must supply.
+
+The **residual** R(A') = I'_{t+1}(A') \ im(ρ̄) at each type records what
+the post-transition state contains beyond transported evidence.
+
+The analysis distinguishes two levels:
+- **Generator-level** (1-categorical shadow): only immediate unary
+  morphisms from old types count. Multi-input product morphisms are not
+  composable in a plain category.
+- **Composite reachability** (multicategorical/hypergraph reading):
+  transitive closure through all morphisms, including multi-input products.
+  An object may be reachable via composites but still require new
+  intermediate structure (new morphisms, new parameters) that did not exist
+  in the old regime.
+
+### Usage
+
+`src/compute_kan_extension.py` performs this analysis post-hoc on all
+iteration transitions in a completed discovery run.
 
 ```bash
 # Default: analyzes runs/protein_flex_llm_deep/discovery
@@ -524,9 +552,23 @@ python src/compute_kan_extension.py --run-dir runs/protein_flex_llm_deep/discove
 python src/compute_kan_extension.py --run-dir runs/my_run/discovery --outdir my_figures --dpi 400
 ```
 
-Outputs per-transition tables (`kan_extension_0_1.{svg,png}`, etc.) and a
-combined overview (`kan_extension_overview.{svg,png}`) showing the regime
-enlargement trajectory with discovery cost per transition.
+### Outputs
+
+- **`kan_extension_0_1.{svg,png}`**, **`kan_extension_1_2.{svg,png}`**,
+  **`kan_extension_2_3.{svg,png}`** — per-transition tables showing each
+  object's status (shared / generator-reachable / composite-reachable /
+  isolated / retracted), comma category, transported fiber size, actual
+  fiber size, and residual.
+- **`kan_extension_overview.{svg,png}`** — combined regime-enlargement
+  trajectory with schema sizes and MDL break gain per transition.
+
+### Example findings (protein_flex_llm_deep)
+
+| Transition | Break type | Key finding |
+|---|---|---|
+| iter 0→1 | regime split | BoundaryProduct is composite-reachable (via new product morphism) but not generator-reachable; 4 parameters are truly isolated |
+| iter 1→2 | ontology break | 7 types retracted (terminal product, ReLU gate, parameters); regime contracts |
+| iter 2→3 | regime split | ModeConditionedCompliance has empty generator comma (Lan = ∅ in 1-cat shadow); reachable only via new multi-input product through new intermediate types; 3 parameters isolated |
 
 ## Custom Systems
 
